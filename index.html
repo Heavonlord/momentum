@@ -3,100 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Momentum Master</title>
+    <title>Momentum Master Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .active-btn:active { transform: scale(0.95); transition: 0.1s; }
+        .habit-card:active { transform: scale(0.98); }
+        .progress-fill { transition: width 0.5s ease-in-out; }
     </style>
 </head>
-<body class="bg-[#F0F4F0] min-h-screen flex items-center justify-center p-4">
+<body class="bg-[#F8FAF8] min-h-screen p-4 font-sans text-gray-800">
 
-    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-green-50">
-        <div class="bg-green-800 p-10 text-white text-center">
-            <h1 class="text-3xl font-black tracking-tighter">MOMENTUM</h1>
-            <p class="text-green-300 text-xs tracking-widest uppercase mt-1">Digital Edge Tracker</p>
+    <div class="max-w-md mx-auto space-y-6">
+        <div class="bg-green-800 rounded-[2rem] p-8 text-white shadow-xl">
+            <h1 class="text-2xl font-bold tracking-tight">Momentum Master</h1>
+            <p class="text-green-300 text-xs mb-6 uppercase tracking-widest">Weekly Consistency</p>
+            
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm font-bold">
+                    <span>Weekly Goal</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="w-full bg-green-900/50 rounded-full h-3">
+                    <div id="progressBar" class="progress-fill bg-green-400 h-3 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="mt-6 rounded-2xl overflow-hidden shadow-inner border border-green-900/20 bg-white/10 p-1">
+    <iframe 
+        style="width: 100%; height: 200px; border: none;" 
+        src="https://docs.google.com/spreadsheets/d/e/2PACX-1vT_aqJi0CznpA8srdC1jAfTQrvksM0UhOmv1skG2Ld-DTWKLy_Ccdw8EW9dfFfttzCIywLmyBTQX75w/pubchart?oid=555309952&amp;format=interactive"></iframe>">
+    </iframe>
+</div>
         </div>
 
-        <div class="p-8 space-y-6">
-            <div>
-                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Current Focus</label>
-                <input id="habitInput" type="text" placeholder="Enter habit..." 
-                    class="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-700 font-medium">
-            </div>
-
-            <button onclick="saveHabit()" 
-                class="active-btn w-full bg-green-700 text-white py-5 rounded-2xl font-bold text-lg shadow-lg shadow-green-200 hover:bg-green-800 transition-all">
-                Log Progress
-            </button>
-
-            <div class="grid grid-cols-2 gap-4 pt-4">
-                <button onclick="generatePDF()" class="active-btn border-2 border-green-800 text-green-800 py-3 rounded-xl font-bold text-sm hover:bg-green-50">
-                    Get PDF
-                </button>
-                <a href="https://sheets.google.com" target="_blank" class="active-btn bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm text-center hover:bg-gray-200">
-                    View Sheet
-                </a>
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <h3 class="text-xs font-bold text-gray-400 uppercase mb-4">Add New Habit</h3>
+            <div class="flex gap-2">
+                <input id="habitInput" type="text" placeholder="e.g., Read 10 mins" 
+                    class="flex-1 p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                <button onclick="addHabit()" class="bg-green-700 text-white px-4 py-3 rounded-xl font-bold">+</button>
             </div>
         </div>
-        
-        <div id="statusMsg" class="text-center pb-6 text-sm font-medium text-green-600 hidden">✓ Momentum Captured!</div>
+
+        <div id="habitList" class="space-y-3">
+            </div>
     </div>
 
     <script>
-        // PASTE YOUR GOOGLE URL BELOW
+        // PASTE YOUR GOOGLE URL HERE
         const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxFX2pWRvUV-64IghJZwlBe7Nbni7E_lJ0Z3OJg03FX6oV8iX8_ahiW8_enP6l9hBFpaA/exec";
 
-        async function saveHabit() {
-            const habit = document.getElementById('habitInput').value;
-            const btn = event.target;
-            const status = document.getElementById('statusMsg');
+        // Local State to keep track of progress
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
 
-            if(!habit) { alert("Please enter a habit first!"); return; }
+        function renderHabits() {
+            const list = document.getElementById('habitList');
+            list.innerHTML = '';
+            
+            habits.forEach((habit, index) => {
+                list.innerHTML += `
+                    <div class="habit-card bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex justify-between items-center animate-in fade-in">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${habit.done ? 'checked' : ''} 
+                                onchange="toggleHabit(${index})" 
+                                class="w-6 h-6 rounded-full border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                            <span class="${habit.done ? 'line-through text-gray-400' : 'font-medium'}">${habit.name}</span>
+                        </div>
+                        <button onclick="removeHabit(${index})" class="text-gray-300 hover:text-red-400 text-xs">Remove</button>
+                    </div>
+                `;
+            });
+            updateProgress();
+            localStorage.setItem('habits', JSON.stringify(habits));
+        }
 
-            btn.innerText = "Syncing...";
-            btn.disabled = true;
+        async function addHabit() {
+            const input = document.getElementById('habitInput');
+            if(!input.value) return;
+            
+            const newHabit = { name: input.value, done: false };
+            habits.push(newHabit);
+            
+            // Sync with Google Sheets
+            fetch(SHEETS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ habit: input.value, status: "Added", notes: "New Habit" })
+            });
 
-            try {
-                // Sending data to Google Sheets
-                await fetch(SHEETS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Essential for Google Apps Script
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ habit: habit, status: "Done", notes: "Logged from Mobile" })
-                });
+            input.value = '';
+            renderHabits();
+        }
 
-                status.classList.remove('hidden');
-                document.getElementById('habitInput').value = "";
-                setTimeout(() => { status.classList.add('hidden'); }, 3000);
-            } catch (error) {
-                alert("Connection error. Check your URL.");
-            } finally {
-                btn.innerText = "Log Progress";
-                btn.disabled = false;
+        function toggleHabit(index) {
+            habits[index].done = !habits[index].done;
+            renderHabits();
+        }
+
+        function removeHabit(index) {
+            if(confirm("Remove this habit?")) {
+                habits.splice(index, 1);
+                renderHabits();
             }
         }
 
-        function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const date = new Date().toLocaleDateString();
+        function updateProgress() {
+            const total = habits.length;
+            const done = habits.filter(h => h.done).length;
+            const percent = total === 0 ? 0 : Math.round((done / total) * 100);
             
-            doc.setFontSize(22);
-            doc.setTextColor(45, 90, 39);
-            doc.text("MOMENTUM MASTER REPORT", 20, 30);
-            
-            doc.setFontSize(12);
-            doc.setTextColor(100);
-            doc.text("Generated on: " + date, 20, 40);
-            doc.line(20, 45, 190, 45);
-            
-            doc.text("Summary: Your habits are being tracked digitally.", 20, 60);
-            doc.text("Visit your Google Sheet for full data analytics.", 20, 70);
-            
-            doc.save("Momentum_Report_" + date + ".pdf");
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').innerText = percent + '%';
         }
+
+        // Initial Load
+        renderHabits();
     </script>
 </body>
 </html>
