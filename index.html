@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momentum Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .active-btn:active { transform: scale(0.95); transition: 0.1s; }
+    </style>
+</head>
+<body class="bg-[#F0F4F0] min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-green-50">
+        <div class="bg-green-800 p-10 text-white text-center">
+            <h1 class="text-3xl font-black tracking-tighter">MOMENTUM</h1>
+            <p class="text-green-300 text-xs tracking-widest uppercase mt-1">Digital Edge Tracker</p>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Current Focus</label>
+                <input id="habitInput" type="text" placeholder="Enter habit..." 
+                    class="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all text-gray-700 font-medium">
+            </div>
+
+            <button onclick="saveHabit()" 
+                class="active-btn w-full bg-green-700 text-white py-5 rounded-2xl font-bold text-lg shadow-lg shadow-green-200 hover:bg-green-800 transition-all">
+                Log Progress
+            </button>
+
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button onclick="generatePDF()" class="active-btn border-2 border-green-800 text-green-800 py-3 rounded-xl font-bold text-sm hover:bg-green-50">
+                    Get PDF
+                </button>
+                <a href="https://sheets.google.com" target="_blank" class="active-btn bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm text-center hover:bg-gray-200">
+                    View Sheet
+                </a>
+            </div>
+        </div>
+        
+        <div id="statusMsg" class="text-center pb-6 text-sm font-medium text-green-600 hidden">✓ Momentum Captured!</div>
+    </div>
+
+    <script>
+        // PASTE YOUR GOOGLE URL BELOW
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxFX2pWRvUV-64IghJZwlBe7Nbni7E_lJ0Z3OJg03FX6oV8iX8_ahiW8_enP6l9hBFpaA/exec";
+
+        async function saveHabit() {
+            const habit = document.getElementById('habitInput').value;
+            const btn = event.target;
+            const status = document.getElementById('statusMsg');
+
+            if(!habit) { alert("Please enter a habit first!"); return; }
+
+            btn.innerText = "Syncing...";
+            btn.disabled = true;
+
+            try {
+                // Sending data to Google Sheets
+                await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Essential for Google Apps Script
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ habit: habit, status: "Done", notes: "Logged from Mobile" })
+                });
+
+                status.classList.remove('hidden');
+                document.getElementById('habitInput').value = "";
+                setTimeout(() => { status.classList.add('hidden'); }, 3000);
+            } catch (error) {
+                alert("Connection error. Check your URL.");
+            } finally {
+                btn.innerText = "Log Progress";
+                btn.disabled = false;
+            }
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const date = new Date().toLocaleDateString();
+            
+            doc.setFontSize(22);
+            doc.setTextColor(45, 90, 39);
+            doc.text("MOMENTUM MASTER REPORT", 20, 30);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text("Generated on: " + date, 20, 40);
+            doc.line(20, 45, 190, 45);
+            
+            doc.text("Summary: Your habits are being tracked digitally.", 20, 60);
+            doc.text("Visit your Google Sheet for full data analytics.", 20, 70);
+            
+            doc.save("Momentum_Report_" + date + ".pdf");
+        }
+    </script>
+</body>
+</html>
